@@ -1,215 +1,306 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>WFO Schedule Indonesia</title>
-  <style>
-    body {
-      font-family: Arial;
-      background: #f5f5f5;
-      padding: 20px;
-    }
+    <title>WFO Schedule Indonesia</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f5f5;
+            padding: 20px;
+        }
 
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      background: white;
-    }
+        h2 {
+            margin-bottom: 10px;
+        }
 
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
+        .filters {
+            margin-bottom: 15px;
+        }
 
-    th {
-      background: #2c3e50;
-      color: white;
-    }
+        select {
+            padding: 6px;
+            margin-right: 10px;
+        }
 
-    .full {
-      background: gold;
-      font-weight: bold;
-    }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+        }
 
-    .holiday {
-      background: red;
-      color: white;
-      font-weight: bold;
-    }
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
 
-    .filters {
-      margin-bottom: 15px;
-    }
-  </style>
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .full {
+            background: gold;
+            font-weight: bold;
+        }
+
+        .holiday {
+            background: red;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>WFO Schedule (Indonesia + Holiday)</h2>
+    <h2>WFO Schedule (Smart Rotation)</h2>
 
-<div class="filters">
-  <select id="monthFilter">
-    <option value="">All Months</option>
-  </select>
+    <div class="filters">
+        <label>Bulan:</label>
+        <select id="monthFilter">
+            <option value="">Semua</option>
+        </select>
 
-  <select id="teamFilter">
-    <option value="">All Teams</option>
-    <option value="A">Team A</option>
-    <option value="B">Team B</option>
-    <option value="C">Team C</option>
-    <option value="D">Team D</option>
-    <option value="Full">Full Team</option>
-    <option value="Holiday">Holiday</option>
-  </select>
-</div>
+        <label>Tahun:</label>
+        <select id="yearFilter">
+            <option value="">Semua</option>
+        </select>
 
-<table>
-  <thead>
-    <tr>
-      <th>No</th>
-      <th>Day</th>
-      <th>Date</th>
-      <th>Team</th>
-    </tr>
-  </thead>
-  <tbody id="scheduleBody"></tbody>
-</table>
+        <label>Hari:</label>
+        <select id="dayFilter">
+            <option value="">Semua</option>
+            <option value="Senin">Senin</option>
+            <option value="Selasa">Selasa</option>
+            <option value="Rabu">Rabu</option>
+            <option value="Kamis">Kamis</option>
+            <option value="Jumat">Jumat</option>
+        </select>
 
-<script>
-  const teams = ["A", "B", "C", "D"];
-  const startDate = new Date("2026-04-06");
-  const endDate = new Date("2027-04-06");
+        <label>Team:</label>
+        <select id="teamFilter">
+            <option value="">Semua</option>
+            <option value="A">Team A</option>
+            <option value="B">Team B</option>
+            <option value="C">Team C</option>
+            <option value="D">Team D</option>
+            <option value="Full">Full Team</option>
+            <option value="Holiday">Libur</option>
+        </select>
+    </div>
 
-  let holidays = [];
-  let data = [];
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Hari</th>
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+            </tr>
+        </thead>
+        <tbody id="scheduleBody"></tbody>
+    </table>
 
-  async function loadHolidays() {
-    const res = await fetch("https://date.nager.at/api/v3/PublicHolidays/2026/ID");
-    const json = await res.json();
+    <script>
+        const teams = ["A", "B", "C", "D"];
+        const startDate = new Date("2026-04-06");
+        const endDate = new Date("2027-04-06");
 
-    holidays = json.map(e => e.date);
-  }
+        let holidays = [];
+        let data = [];
 
-  function isHoliday(date) {
-    const d = date.toISOString().split("T")[0];
-    return holidays.includes(d);
-  }
 
-  function generateData() {
-    let currentDate = new Date(startDate);
-    let weekIndex = 0;
-
-    while (currentDate < endDate) {
-      const day = currentDate.getDay();
-
-      if (day !== 0 && day !== 6) {
-        let entry = {
-          date: new Date(currentDate),
-          dayName: currentDate.toLocaleDateString("id-ID", { weekday: "long" }),
-          team: "",
-          isFull: false,
-          isHoliday: false
-        };
-
-        if (isHoliday(currentDate)) {
-          entry.team = "Holiday";
-          entry.isHoliday = true;
-        } else if (day === 4) {
-          entry.team = "Full";
-          entry.isFull = true;
-        } else {
-          const map = [1,2,3,5];
-          const index = map.indexOf(day);
-
-          if (index !== -1) {
-            const team = teams[(weekIndex + index) % 4];
-            entry.team = team;
-          }
+        // 🔒 SEEDED RANDOM (biar stabil)
+        function seededRandom(seed) {
+            let x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
         }
 
-        data.push(entry);
-
-        // 🔥 ROTATION FIX
-        // hanya naik kalau bukan holiday
-        if (day === 5 && !entry.isHoliday) {
-          weekIndex = (weekIndex + 1) % 4;
+        function shuffleWithSeed(array, seed) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom(seed + i) * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
         }
-      }
 
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-  }
 
-  function render() {
-    const tbody = document.getElementById("scheduleBody");
-    const monthFilter = document.getElementById("monthFilter");
-    const teamFilter = document.getElementById("teamFilter");
+        // 🇮🇩 LOAD HOLIDAY API
+        async function loadHolidays() {
+            const res = await fetch("https://date.nager.at/api/v3/PublicHolidays/2026/ID");
+            const json = await res.json();
+            holidays = json.map(e => e.date);
+        }
 
-    tbody.innerHTML = "";
+        function isHoliday(date) {
+            const d = date.toISOString().split("T")[0];
+            return holidays.includes(d);
+        }
 
-    let filtered = data;
 
-    if (monthFilter.value !== "") {
-      filtered = filtered.filter(d => d.date.getMonth() == monthFilter.value);
-    }
+        // 🔥 CORE LOGIC
+        function generateData() {
+            let currentDate = new Date(startDate);
 
-    if (teamFilter.value !== "") {
-      filtered = filtered.filter(d => {
-        if (teamFilter.value === "Full") return d.isFull;
-        if (teamFilter.value === "Holiday") return d.isHoliday;
-        return d.team === teamFilter.value;
-      });
-    }
+            let teamIndex = 0;
+            let pendingTeam = null;
 
-    filtered.forEach((d, i) => {
-      const tr = document.createElement("tr");
+            let cycle = 0;
+            let currentShuffle = shuffleWithSeed(teams, cycle);
 
-      if (d.isFull) tr.classList.add("full");
-      if (d.isHoliday) tr.classList.add("holiday");
+            while (currentDate < endDate) {
+                const day = currentDate.getDay();
 
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td>${d.dayName}</td>
-        <td>${d.date.toLocaleDateString("id-ID")}</td>
-        <td>
-          ${
-            d.isHoliday
-              ? "Libur Nasional"
-              : d.isFull
-              ? "Full Team"
-              : "Team " + d.team
-          }
-        </td>
-      `;
+                if (day !== 0 && day !== 6) {
+                    let entry = {
+                        date: new Date(currentDate),
+                        dayName: currentDate.toLocaleDateString("id-ID", { weekday: "long" }),
+                        team: "",
+                        isFull: false,
+                        isHoliday: false
+                    };
 
-      tbody.appendChild(tr);
-    });
-  }
+                    if (isHoliday(currentDate)) {
+                        entry.team = "Libur Nasional";
+                        entry.isHoliday = true;
 
-  function initFilters() {
-    const monthFilter = document.getElementById("monthFilter");
+                        if (pendingTeam === null) {
+                            pendingTeam = currentShuffle[teamIndex % teams.length];
+                        }
+                    }
+                    else if (day === 4) {
+                        entry.team = "Full Team";
+                        entry.isFull = true;
+                    }
+                    else {
+                        let team;
 
-    const months = [...new Set(data.map(d => d.date.getMonth()))];
+                        if (pendingTeam !== null) {
+                            team = pendingTeam;
+                            pendingTeam = null;
+                            teamIndex++;
+                        } else {
+                            team = currentShuffle[teamIndex % teams.length];
+                            teamIndex++;
+                        }
 
-    months.forEach(m => {
-      const option = document.createElement("option");
-      option.value = m;
-      option.text = new Date(2026, m).toLocaleString("id-ID", { month: "long" });
-      monthFilter.appendChild(option);
-    });
+                        entry.team = team;
 
-    monthFilter.addEventListener("change", render);
-    document.getElementById("teamFilter").addEventListener("change", render);
-  }
+                        // 🔁 shuffle tiap cycle
+                        if (teamIndex % teams.length === 0) {
+                            cycle++;
+                            currentShuffle = shuffleWithSeed(teams, cycle);
+                        }
+                    }
 
-  async function init() {
-    await loadHolidays();
-    generateData();
-    initFilters();
-    render();
-  }
+                    data.push(entry);
+                }
 
-  init();
-</script>
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+
+        // 🎨 RENDER
+        function render() {
+            const tbody = document.getElementById("scheduleBody");
+            const monthFilter = document.getElementById("monthFilter");
+            const yearFilter = document.getElementById("yearFilter");
+            const dayFilter = document.getElementById("dayFilter");
+            const teamFilter = document.getElementById("teamFilter");
+
+            tbody.innerHTML = "";
+
+            let filtered = data;
+
+            if (monthFilter.value !== "") {
+                filtered = filtered.filter(d => d.date.getMonth() == monthFilter.value);
+            }
+
+            if (yearFilter.value !== "") {
+                filtered = filtered.filter(d => d.date.getFullYear() == yearFilter.value);
+            }
+
+            if (dayFilter.value !== "") {
+                filtered = filtered.filter(d => d.dayName === dayFilter.value);
+            }
+
+            if (teamFilter.value !== "") {
+                filtered = filtered.filter(d => {
+                    if (teamFilter.value === "Full") return d.isFull;
+                    if (teamFilter.value === "Holiday") return d.isHoliday;
+                    return d.team === teamFilter.value;
+                });
+            }
+
+            filtered.forEach((d, i) => {
+                const tr = document.createElement("tr");
+
+                if (d.isFull) tr.classList.add("full");
+                if (d.isHoliday) tr.classList.add("holiday");
+
+                tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${d.dayName}</td>
+            <td>${d.date.toLocaleDateString("id-ID")}</td>
+            <td>
+                ${d.isHoliday
+                        ? "Libur Nasional"
+                        : d.isFull
+                            ? "Full Team"
+                            : "Team " + d.team
+                    }
+            </td>
+        `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        // ⚙️ INIT FILTER
+        function initFilters() {
+            const monthFilter = document.getElementById("monthFilter");
+            const yearFilter = document.getElementById("yearFilter");
+
+            const months = [...new Set(data.map(d => d.date.getMonth()))];
+            const years = [...new Set(data.map(d => d.date.getFullYear()))];
+
+            months.forEach(m => {
+                const option = document.createElement("option");
+                option.value = m;
+                option.text = new Date(2026, m).toLocaleString("id-ID", { month: "long" });
+                monthFilter.appendChild(option);
+            });
+
+            years.forEach(y => {
+                const option = document.createElement("option");
+                option.value = y;
+                option.text = y;
+                yearFilter.appendChild(option);
+            });
+
+            monthFilter.addEventListener("change", render);
+            yearFilter.addEventListener("change", render);
+            document.getElementById("teamFilter").addEventListener("change", render);
+            document.getElementById("dayFilter").addEventListener("change", render);
+        }
+
+
+        // 🚀 INIT
+        async function init() {
+            await loadHolidays();
+            generateData();
+            initFilters();
+            render();
+        }
+
+        init();
+    </script>
 
 </body>
+
 </html>
