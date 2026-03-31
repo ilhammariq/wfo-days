@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WFO Schedule Indonesia</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .full {
+      background: gold;
+      font-weight: bold;
+    }
+
+    .holiday {
+      background: red;
+      color: white;
+      font-weight: bold;
+    }
+
+    .filters {
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>WFO Schedule (Indonesia + Holiday)</h2>
+
+<div class="filters">
+  <select id="monthFilter">
+    <option value="">All Months</option>
+  </select>
+
+  <select id="teamFilter">
+    <option value="">All Teams</option>
+    <option value="A">Team A</option>
+    <option value="B">Team B</option>
+    <option value="C">Team C</option>
+    <option value="D">Team D</option>
+    <option value="Full">Full Team</option>
+    <option value="Holiday">Holiday</option>
+  </select>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>No</th>
+      <th>Day</th>
+      <th>Date</th>
+      <th>Team</th>
+    </tr>
+  </thead>
+  <tbody id="scheduleBody"></tbody>
+</table>
+
+<script>
+  const teams = ["A", "B", "C", "D"];
+  const startDate = new Date("2026-04-06");
+  const endDate = new Date("2027-04-06");
+
+  let holidays = [];
+  let data = [];
+
+  async function loadHolidays() {
+    const res = await fetch("https://date.nager.at/api/v3/PublicHolidays/2026/ID");
+    const json = await res.json();
+
+    holidays = json.map(e => e.date);
+  }
+
+  function isHoliday(date) {
+    const d = date.toISOString().split("T")[0];
+    return holidays.includes(d);
+  }
+
+  function generateData() {
+    let currentDate = new Date(startDate);
+    let weekIndex = 0;
+
+    while (currentDate < endDate) {
+      const day = currentDate.getDay();
+
+      if (day !== 0 && day !== 6) {
+        let entry = {
+          date: new Date(currentDate),
+          dayName: currentDate.toLocaleDateString("id-ID", { weekday: "long" }),
+          team: "",
+          isFull: false,
+          isHoliday: false
+        };
+
+        if (isHoliday(currentDate)) {
+          entry.team = "Holiday";
+          entry.isHoliday = true;
+        } else if (day === 4) {
+          entry.team = "Full";
+          entry.isFull = true;
+        } else {
+          const map = [1,2,3,5];
+          const index = map.indexOf(day);
+
+          if (index !== -1) {
+            const team = teams[(weekIndex + index) % 4];
+            entry.team = team;
+          }
+        }
+
+        data.push(entry);
+
+        // 🔥 ROTATION FIX
+        // hanya naik kalau bukan holiday
+        if (day === 5 && !entry.isHoliday) {
+          weekIndex = (weekIndex + 1) % 4;
+        }
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  }
+
+  function render() {
+    const tbody = document.getElementById("scheduleBody");
+    const monthFilter = document.getElementById("monthFilter");
+    const teamFilter = document.getElementById("teamFilter");
+
+    tbody.innerHTML = "";
+
+    let filtered = data;
+
+    if (monthFilter.value !== "") {
+      filtered = filtered.filter(d => d.date.getMonth() == monthFilter.value);
+    }
+
+    if (teamFilter.value !== "") {
+      filtered = filtered.filter(d => {
+        if (teamFilter.value === "Full") return d.isFull;
+        if (teamFilter.value === "Holiday") return d.isHoliday;
+        return d.team === teamFilter.value;
+      });
+    }
+
+    filtered.forEach((d, i) => {
+      const tr = document.createElement("tr");
+
+      if (d.isFull) tr.classList.add("full");
+      if (d.isHoliday) tr.classList.add("holiday");
+
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${d.dayName}</td>
+        <td>${d.date.toLocaleDateString("id-ID")}</td>
+        <td>
+          ${
+            d.isHoliday
+              ? "Libur Nasional"
+              : d.isFull
+              ? "Full Team"
+              : "Team " + d.team
+          }
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function initFilters() {
+    const monthFilter = document.getElementById("monthFilter");
+
+    const months = [...new Set(data.map(d => d.date.getMonth()))];
+
+    months.forEach(m => {
+      const option = document.createElement("option");
+      option.value = m;
+      option.text = new Date(2026, m).toLocaleString("id-ID", { month: "long" });
+      monthFilter.appendChild(option);
+    });
+
+    monthFilter.addEventListener("change", render);
+    document.getElementById("teamFilter").addEventListener("change", render);
+  }
+
+  async function init() {
+    await loadHolidays();
+    generateData();
+    initFilters();
+    render();
+  }
+
+  init();
+</script>
+
+</body>
+</html>
