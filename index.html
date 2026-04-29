@@ -58,6 +58,18 @@
 
     <h2>WFO Schedule (Smart Rotation)</h2>
 
+    <div id="teamNotes" style="
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #eef3f7;
+        border-left: 4px solid #2c3e50;
+        font-size: 14px;
+    ">
+        <strong>Notes:</strong>
+        <div id="teamNotesContent"></div>
+    </div>
+
+
     <div class="filters">
         <label>Bulan:</label>
         <select id="monthFilter">
@@ -98,103 +110,166 @@
                 <th>Hari</th>
                 <th>Tanggal</th>
                 <th>Keterangan</th>
+                <th>Cuti</th>
             </tr>
         </thead>
         <tbody id="scheduleBody"></tbody>
     </table>
 
     <script>
-        const teams = ["A", "B", "C", "D"];
+        const teamMember = [
+            {
+                "team": "A",
+                "member": ["Ariq", "Fii"]
+            },
+            {
+                "team": "B",
+                "member": ["Galu", "Hilmy"]
+            },
+            {
+                "team": "C",
+                "member": ["Abror", "Arif"]
+            },
+            {
+                "team": "D",
+                "member": ["Rengga", "Dita"]
+            },
+        ];
+        const teams = ["A", "B", "C", "D"]
         const startDate = new Date("2026-05-05");
         const endDate = new Date("2026-12-31");
 
         let holidays = [
-                {
-                    "date": "2026-01-01",
-                    "name": "Tahun Baru 2026 Masehi"
-                },
-                {
-                    "date": "2026-01-16",
-                    "name": "Isra Mikraj Nabi Muhammad S.A.W."
-                },
-                {
-                    "date": "2026-02-16",
-                    "name": "Tahun Baru Imlek 2577 Kongzili"
-                },
-                {
-                    "date": "2026-02-17",
-                    "name": "Tahun Baru Imlek 2577 Kongzili"
-                },
-                {
-                    "date": "2026-03-18",
-                    "name": "Hari Suci Nyepi (Tahun Baru Saka 1948)"
-                },
-                {
-                    "date": "2026-03-19",
-                    "name": "Hari Suci Nyepi (Tahun Baru Saka 1948)"
-                },
-                {
-                    "date": "2026-03-20",
-                    "name": "Idul Fitri 1447 Hijriah"
-                },
-                {
-                    "date": "2026-03-21",
-                    "name": "Idul Fitri 1447 Hijriah"
-                },
-                {
-                    "date": "2026-03-22",
-                    "name": "Idul Fitri 1447 Hijriah"
-                },
-                {
-                    "date": "2026-04-03",
-                    "name": "Wafat Yesus Kristus"
-                },
-                {
-                    "date": "2026-04-05",
-                    "name": "Kebangkitan Yesus Kristus (Paskah)"
-                },
-                {
-                    "date": "2026-05-01",
-                    "name": "Hari Buruh Internasional"
-                },
-                {
-                    "date": "2026-05-14",
-                    "name": "Kenaikan Yesus Kristus"
-                },
-                {
-                    "date": "2026-05-27",
-                    "name": "Idul Adha 1447 Hijriah"
-                },
-                {
-                    "date": "2026-05-31",
-                    "name": "Hari Raya Waisak 2570 BE"
-                },
-                {
-                    "date": "2026-06-01",
-                    "name": "Hari Lahir Pancasila"
-                },
-                {
-                    "date": "2026-06-16",
-                    "name": "1 Muharam Tahun Baru Islam 1448 Hijriah"
-                },
-                {
-                    "date": "2026-08-17",
-                    "name": "Proklamasi Kemerdekaan"
-                },
-                {
-                    "date": "2026-08-25",
-                    "name": "Maulid Nabi Muhammad S.A.W."
-                },
-                {
-                    "date": "2026-12-25",
-                    "name": "Hari Raya Natal"
-                }
-            ]
+            {
+                "date": "2026-01-01",
+                "name": "Tahun Baru 2026 Masehi"
+            },
+            {
+                "date": "2026-01-16",
+                "name": "Isra Mikraj Nabi Muhammad S.A.W."
+            },
+            {
+                "date": "2026-02-16",
+                "name": "Tahun Baru Imlek 2577 Kongzili"
+            },
+            {
+                "date": "2026-02-17",
+                "name": "Tahun Baru Imlek 2577 Kongzili"
+            },
+            {
+                "date": "2026-03-18",
+                "name": "Hari Suci Nyepi (Tahun Baru Saka 1948)"
+            },
+            {
+                "date": "2026-03-19",
+                "name": "Hari Suci Nyepi (Tahun Baru Saka 1948)"
+            },
+            {
+                "date": "2026-03-20",
+                "name": "Idul Fitri 1447 Hijriah"
+            },
+            {
+                "date": "2026-03-21",
+                "name": "Idul Fitri 1447 Hijriah"
+            },
+            {
+                "date": "2026-03-22",
+                "name": "Idul Fitri 1447 Hijriah"
+            },
+            {
+                "date": "2026-04-03",
+                "name": "Wafat Yesus Kristus"
+            },
+            {
+                "date": "2026-04-05",
+                "name": "Kebangkitan Yesus Kristus (Paskah)"
+            },
+            {
+                "date": "2026-05-01",
+                "name": "Hari Buruh Internasional"
+            },
+            {
+                "date": "2026-05-14",
+                "name": "Kenaikan Yesus Kristus"
+            },
+            {
+                "date": "2026-05-27",
+                "name": "Idul Adha 1447 Hijriah"
+            },
+            {
+                "date": "2026-05-31",
+                "name": "Hari Raya Waisak 2570 BE"
+            },
+            {
+                "date": "2026-06-01",
+                "name": "Hari Lahir Pancasila"
+            },
+            {
+                "date": "2026-06-16",
+                "name": "1 Muharam Tahun Baru Islam 1448 Hijriah"
+            },
+            {
+                "date": "2026-08-17",
+                "name": "Proklamasi Kemerdekaan"
+            },
+            {
+                "date": "2026-08-25",
+                "name": "Maulid Nabi Muhammad S.A.W."
+            },
+            {
+                "date": "2026-12-25",
+                "name": "Hari Raya Natal"
+            }
+        ]
+
+        let cutiDays = [
+            {
+                "name": "Abror",
+                "tanggal": [
+                    "2026-05-28",
+                    "2026-05-29"
+                ],
+                "team": "C"
+            },
+            {
+                "name": "Dita",
+                "tanggal": [
+                    "2026-05-13",
+                    "2026-05-15"
+                ],
+                "team": "D"
+            },
+            {
+                "name": "Galu",
+                "tanggal": [
+                    "2026-05-28",
+                    "2026-05-29"
+                ],
+                "team": "B"
+            },
+            {
+                "name": "Rengga",
+                "tanggal": [
+                    "2026-05-15",
+                    "2026-05-18"
+                ],
+                "team": "D"
+            },
+        ]
 
         let data = [];
 
 
-        // 🔒 SEEDED RANDOM (biar stabil)
+        function renderTeamNotes() {
+            const container = document.getElementById("teamNotesContent");
+
+            container.innerHTML = teamMember
+                .map(t => `Team ${t.team}: ${t.member.join(", ")}`)
+                .join("<br>");
+        }
+
+
+        // 🔒 SEEDED RANDOM
         function seededRandom(seed) {
             let x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
@@ -209,9 +284,14 @@
             return arr;
         }
 
-       function getHoliday(date) {
+        function getHoliday(date) {
             const d = date.toISOString().split("T")[0];
             return holidays.find(h => h.date === d);
+        }
+
+        function getCuti(date) {
+            const d = date.toISOString().split("T")[0];
+            return cutiDays.filter(c => c.tanggal.includes(d)).map(c => c.name);
         }
 
 
@@ -233,6 +313,7 @@
                         date: new Date(currentDate),
                         dayName: currentDate.toLocaleDateString("id-ID", { weekday: "long" }),
                         team: "",
+                        cuti: [],
                         isFull: false,
                         isHoliday: false
                     };
@@ -277,6 +358,11 @@
 
                 currentDate.setDate(currentDate.getDate() + 1);
             }
+
+            data.map((item) => {
+                const cuti = getCuti(item.date)
+                item.cuti = cuti
+            })
         }
 
 
@@ -327,9 +413,13 @@
                         ? d.team
                         : d.isFull
                             ? "Full Team"
-                            : "Team "+ d.team
+                            : "Team " + d.team
                     }
             </td>
+            <td>
+                ${d.cuti && d.cuti.length ? d.cuti.join(", ") : "-"}
+            </td>
+
         `;
 
                 tbody.appendChild(tr);
@@ -371,6 +461,7 @@
             generateData();
             initFilters();
             render();
+            renderTeamNotes();
         }
 
         init();
