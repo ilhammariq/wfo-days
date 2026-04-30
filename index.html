@@ -492,9 +492,8 @@
                     `DTEND;VALUE=DATE:${ymd}`,
                     `SUMMARY:WFO ${"Team " + item.team}`,
 
-                    // ✅ REMINDER H-1
                     "BEGIN:VALARM",
-                    "TRIGGER:-P1D",
+                    "TRIGGER;RELATED=START:-PT6H",
                     "ACTION:DISPLAY",
                     "DESCRIPTION:Reminder WFO BESOK",
                     "END:VALARM",
